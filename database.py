@@ -14,6 +14,9 @@ def init_db():
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
+            first_name TEXT,
+            last_name TEXT,
+            phone TEXT,
             model TEXT,
             color TEXT
         )
