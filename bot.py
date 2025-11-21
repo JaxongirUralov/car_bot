@@ -96,7 +96,11 @@ async def admin_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not orders:
             return await query.edit_message_text("No orders yet.")
 
-        text = "\n".join([f"ID {oid}: {model} - {color}" for oid, uid, model, color in orders])
+        text = "\n".join([
+            f"ID {oid} → {first} {last} ({phone}) : {model} - {color}"
+            for oid, uid, first, last, phone, model, color in orders
+        ])
+
         return await query.edit_message_text(text)
 
     if data == "admin:delete":
