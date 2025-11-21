@@ -153,24 +153,13 @@ async def delete_order_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
     await query.edit_message_text(f"✔ Order {order_id} deleted.")
 
-# Allow names & phone number during conversation
-app.add_handler(
-    MessageHandler(
-        filters.TEXT 
-        & ~filters.COMMAND 
-        & ~filters.Regex("^[A-Za-z0-9+ ]{2,}$"),  
-        wrong_message
-    )
-)
 
-    )
 
-# MAIN
 def main():
 
     print("MAIN FUNCTION STARTED")
 
-    init_db()  # Create DB if not exists
+    init_db()
 
     print("AFTER INIT_DB")
 
@@ -178,7 +167,7 @@ def main():
 
     print("APP BUILT")
 
-    # Conversation handler (MUST be indented!)
+    # Conversation handler
     conv_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(save_order, pattern="^color:")],
         states={
@@ -199,10 +188,14 @@ def main():
     app.add_handler(CallbackQueryHandler(save_order, pattern="^color:"))
     app.add_handler(CallbackQueryHandler(admin_actions, pattern="^admin:"))
     app.add_handler(CallbackQueryHandler(delete_order_callback, pattern="^delete:"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, wrong_message))
+
+    # WRONG_MESSAGE should be LAST
+    app.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND & ~filters.Regex("^[A-Za-z0-9+ ]{2,}$"),
+            wrong_message
+        )
+    )
 
     print("Bot is running...")
     app.run_polling()
-
-if __name__ == "__main__":
-    main()
