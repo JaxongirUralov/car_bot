@@ -159,13 +159,17 @@ async def wrong_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Please use the buttons instead of typing text 🙂"
     )
 
-
-
 def main():
 
     print("MAIN FUNCTION STARTED")
 
-    init_db()
+    # Delete old database only ONE TIME on Railway
+    import os
+    if os.path.exists("orders.db"):
+        os.remove("orders.db")
+        print("OLD orders.db was deleted – NEW DB will be created now!")
+
+    init_db()  # Create DB if not exists
 
     print("AFTER INIT_DB")
 
