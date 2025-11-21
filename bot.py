@@ -69,7 +69,8 @@ async def ask_lastname(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Ask phone number
 async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['last_name'] = update.message.text
-    await update.message.reply_text("Please enter your phone number to reach you when necessary "+998 xxx xx xx ?")
+    await update.message.reply_text("Please enter your phone number to reach you (example: +998 90 123 45 67)")
+
     return ASK_PHONE
 
 # Final step — save to DB
