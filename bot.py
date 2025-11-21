@@ -221,9 +221,8 @@ def main():
     init_db()
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Conversation pipeline
     conv_handler = ConversationHandler(
-        entry_points=[CallbackQueryHandler(confirm_order, pattern="^color:")],
+        entry_points=[CallbackQueryHandler(handle_confirmation, pattern="^confirm:")],
         states={
             ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_lastname)],
             ASK_LASTNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_phone)],
@@ -231,6 +230,8 @@ def main():
         },
         fallbacks=[]
     )
+
+
 
     # Register handlers
     app.add_handler(conv_handler)
