@@ -12,7 +12,8 @@ from database import init_db, add_order, get_orders, delete_order
 
 BOT_TOKEN = "8529614987:AAGcJgGU3n_9so1F-KTAv_9-A888rv72Z40"
 ADMINS = [261688257]
-CAR_MODELS = ["Malibu", "Tracker", "Cobalt", "Gentra", "Damas"]
+CAR_MODELS = ["S", "H", "V"]
+OPTIONS = ["LS","LT","Premier",]
 COLORS = ["white", "black", "silver", "red", "blue"]
 
 
@@ -24,15 +25,37 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # Model selected
-async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def select_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+
     model = query.data.split(":")[1]
     context.user_data["model"] = model
 
+    keyboard = [[InlineKeyboardButton(option, callback_data=f"option:{option}")]
+                for option in OPTIONS]
+
+    await query.edit_message_text(
+        f"Selected model: {model}\nChoose an option:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+
+#
+async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    option = query.data.split(":")[1]
+    context.user_data["option"] = option
+
     keyboard = [[InlineKeyboardButton(color, callback_data=f"color:{color}")]
                 for color in COLORS]
-    await query.edit_message_text(f"Selected model: {model}\nChoose a color:", reply_markup=InlineKeyboardMarkup(keyboard))
+
+    await query.edit_message_text(
+        f"Selected option: {option}\nChoose a color:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 
 # Color selected → ask for name
@@ -141,7 +164,8 @@ def main():
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("admin", admin))
-    app.add_handler(CallbackQueryHandler(select_color, pattern="^model:"))
+    app.add_handler(CallbackQueryHandler(select_option, pattern="^model:"))
+    app.add_handler(CallbackQueryHandler(select_color, pattern="^option:"))
     app.add_handler(CallbackQueryHandler(save_order, pattern="^color:"))
     app.add_handler(CallbackQueryHandler(admin_actions, pattern="^admin:"))
     app.add_handler(CallbackQueryHandler(delete_order_callback, pattern="^delete:"))
