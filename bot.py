@@ -163,12 +163,6 @@ def main():
 
     print("MAIN FUNCTION STARTED")
 
-    # Delete old database only ONE TIME on Railway
-    import os
-    if os.path.exists("orders.db"):
-        os.remove("orders.db")
-        print("OLD orders.db was deleted – NEW DB will be created now!")
-
     init_db()  # Create DB if not exists
 
     print("AFTER INIT_DB")
@@ -213,3 +207,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
