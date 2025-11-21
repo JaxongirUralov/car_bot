@@ -159,16 +159,16 @@ async def wrong_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Please use the buttons instead of typing text 🙂"
     )
 
+# --- keep all your imports and functions above the same ---
+
 def main():
 
     print("MAIN FUNCTION STARTED")
 
-    init_db()  # Create DB if not exists
-
+    init_db()
     print("AFTER INIT_DB")
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-
     print("APP BUILT")
 
     # Conversation handler
@@ -193,7 +193,7 @@ def main():
     app.add_handler(CallbackQueryHandler(admin_actions, pattern="^admin:"))
     app.add_handler(CallbackQueryHandler(delete_order_callback, pattern="^delete:"))
 
-    # WRONG_MESSAGE should be LAST
+    # WRONG MESSAGE
     app.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND & ~filters.Regex("^[A-Za-z0-9+ ]{2,}$"),
@@ -201,10 +201,16 @@ def main():
         )
     )
 
-    print("Bot is running...")
-    app.run_polling()
+    print("Bot is running with webhook...")
 
+    WEBHOOK_URL = "https://carbot-production.up.railway.app"   # MUST include https!
+
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", 8080)),
+        url_path=BOT_TOKEN,  # webhook endpoint
+        webhook_url=f"{WEBHOOK_URL}/{BOT_TOKEN}"  # Telegram receives updates here
+    )
 
 if __name__ == "__main__":
     main()
-
