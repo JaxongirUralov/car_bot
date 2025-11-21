@@ -30,6 +30,7 @@ def add_order(user_id, first_name, last_name, phone, model, color):
     conn.commit()
     conn.close()
 
+
 def get_orders():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -38,10 +39,10 @@ def get_orders():
     conn.close()
     return rows
 
+
 def delete_order(order_id):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM orders WHERE id = ?", (order_id,))
     conn.commit()
     conn.close()
-
