@@ -13,7 +13,7 @@ print("RUNNING BOT.PY FROM THIS DIRECTORY:", os.getcwd())
 
 from database import init_db, add_order, get_orders, delete_order
 
-BOT_TOKEN = "8529xxxxxxxxxxxxxxxxxxxxx"   # your token
+BOT_TOKEN = "8529614987:AAGcJgGU3n_9so1F-KTAv_9-A888rv72Z40"   # your token
 ADMINS = [261688257]
 
 CAR_MODELS = ["S", "H", "V"]
