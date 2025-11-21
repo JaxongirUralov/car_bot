@@ -1,3 +1,6 @@
+# NEW conversation states
+from telegram.ext import ConversationHandler
+ASK_NAME, ASK_LASTNAME, ASK_PHONE = range(3)
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler,
@@ -51,13 +54,43 @@ async def save_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     color = query.data.split(":")[1]
     model = context.user_data["model"]
-    user_id = query.from_user.id
 
-    add_order(user_id, model, color)
+    context.user_data["color"] = color
+    context.user_data["model"] = model
 
-    await query.edit_message_text(
-        f"✔ Your order is saved!\n\nModel: {model}\nColor: {color}"
+    await query.edit_message_text("Please enter your *first name*:", parse_mode="Markdown")
+    return ASK_NAME
+# Ask last name
+async def ask_lastname(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['first_name'] = update.message.text
+    await update.message.reply_text("Now enter your *last name*:", parse_mode="Markdown")
+    return ASK_LASTNAME
+
+# Ask phone number
+async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['last_name'] = update.message.text
+    await update.message.reply_text("What is your *phone number*?")
+    return ASK_PHONE
+
+# Final step — save to DB
+async def finish_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    first_name = context.user_data['first_name']
+    last_name = context.user_data['last_name']
+    phone = update.message.text
+    model = context.user_data['model']
+    color = context.user_data['color']
+
+    add_order(user_id, first_name, last_name, phone, model, color)
+
+    await update.message.reply_text(
+        f"Order saved! ✔\n\n"
+        f"👤 {first_name} {last_name}\n"
+        f"📞 {phone}\n"
+        f"🚗 {model} — {color}"
     )
+    return ConversationHandler.END
+
 
 # /admin panel
 async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -126,25 +159,40 @@ async def wrong_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # MAIN
 def main():
-    
-    print("MAIN FUNCTION STARTED")    # <--- ADD THIS
+
+    print("MAIN FUNCTION STARTED")
 
     init_db()  # Create DB if not exists
 
-    print("AFTER INIT_DB")           # <--- ADD THIS
+    print("AFTER INIT_DB")
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    print("APP BUILT")               # <--- ADD THIS
-    
+    print("APP BUILT")
+
+    # Conversation handler (MUST be indented!)
+    conv_handler = ConversationHandler(
+        entry_points=[CallbackQueryHandler(save_order, pattern="^color:")],
+        states={
+            ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_lastname)],
+            ASK_LASTNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_phone)],
+            ASK_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, finish_order)],
+        },
+        fallbacks=[]
+    )
+    app.add_handler(conv_handler)
+
+    # Commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("admin", admin))
 
+    # Callback handlers
     app.add_handler(CallbackQueryHandler(select_color, pattern="^model:"))
     app.add_handler(CallbackQueryHandler(save_order, pattern="^color:"))
     app.add_handler(CallbackQueryHandler(admin_actions, pattern="^admin:"))
     app.add_handler(CallbackQueryHandler(delete_order_callback, pattern="^delete:"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, wrong_message))
+
     print("Bot is running...")
     app.run_polling()
 
