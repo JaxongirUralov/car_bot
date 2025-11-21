@@ -13,21 +13,20 @@ def init_db():
             last_name TEXT,
             phone TEXT,
             model TEXT,
-            option TEXT,
+            car_option TEXT,
             color TEXT
-            
         )
     """)
     conn.commit()
     conn.close()
 
 
-def add_order(user_id, first_name, last_name, phone, model, color):
+def add_order(user_id, first_name, last_name, phone, model, car_option, color):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO orders (user_id, first_name, last_name, phone, model, option, color) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (user_id, first_name, last_name, phone, model, option, color)
+        "INSERT INTO orders (user_id, first_name, last_name, phone, model, car_option, color) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (user_id, first_name, last_name, phone, model, car_option, color)
     )
     conn.commit()
     conn.close()
@@ -36,7 +35,7 @@ def add_order(user_id, first_name, last_name, phone, model, color):
 def get_orders():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, user_id, first_name, last_name, phone, model, option, color FROM orders")
+    cursor.execute("SELECT id, user_id, first_name, last_name, phone, model, car_option, color FROM orders")
     rows = cursor.fetchall()
     conn.close()
     return rows
