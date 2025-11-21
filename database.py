@@ -1,13 +1,8 @@
 import sqlite3
-import os
 
 DB_NAME = "orders.db"
 
 def init_db():
-    print("INIT_DB CALLED")
-    print("Current working directory:", os.getcwd())
-    print("Creating DB at:", DB_NAME)
-
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("""
@@ -25,25 +20,23 @@ def init_db():
     conn.close()
 
 
-def add_order(user_id, model, color):
+def add_order(user_id, first_name, last_name, phone, model, color):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO orders (user_id, model, color) VALUES (?, ?, ?)",
-        (user_id, model, color)
+        "INSERT INTO orders (user_id, first_name, last_name, phone, model, color) VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, first_name, last_name, phone, model, color)
     )
     conn.commit()
     conn.close()
 
-
 def get_orders():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, user_id, model, color FROM orders")
+    cursor.execute("SELECT id, user_id, first_name, last_name, phone, model, color FROM orders")
     rows = cursor.fetchall()
     conn.close()
     return rows
-
 
 def delete_order(order_id):
     conn = sqlite3.connect(DB_NAME)
@@ -51,3 +44,4 @@ def delete_order(order_id):
     cursor.execute("DELETE FROM orders WHERE id = ?", (order_id,))
     conn.commit()
     conn.close()
+
