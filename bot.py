@@ -69,7 +69,7 @@ async def ask_lastname(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Ask phone number
 async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['last_name'] = update.message.text
-    await update.message.reply_text("What is your *phone number*?")
+    await update.message.reply_text("Please enter your phone number to reach you when necessary "+998 xxx xx xx ?")
     return ASK_PHONE
 
 # Final step — save to DB
@@ -152,9 +152,16 @@ async def delete_order_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
     await query.edit_message_text(f"✔ Order {order_id} deleted.")
 
-async def wrong_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Please use the buttons instead of typing text 🙂"
+# Allow names & phone number during conversation
+app.add_handler(
+    MessageHandler(
+        filters.TEXT 
+        & ~filters.COMMAND 
+        & ~filters.Regex("^[A-Za-z0-9+ ]{2,}$"),  
+        wrong_message
+    )
+)
+
     )
 
 # MAIN
