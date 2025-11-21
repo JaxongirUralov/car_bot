@@ -153,6 +153,12 @@ async def delete_order_callback(update: Update, context: ContextTypes.DEFAULT_TY
 
     await query.edit_message_text(f"✔ Order {order_id} deleted.")
 
+# Handles wrong messages during conversation
+async def wrong_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Please use the buttons instead of typing text 🙂"
+    )
+
 
 
 def main():
