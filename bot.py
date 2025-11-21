@@ -13,7 +13,6 @@ print("RUNNING BOT.PY FROM THIS DIRECTORY:", os.getcwd())
 
 from database import init_db, add_order, get_orders, delete_order
 
-
 BOT_TOKEN = "8529xxxxxxxxxxxxxxxxxxxxx"   # your token
 ADMINS = [261688257]
 
@@ -26,8 +25,10 @@ COLORS = ["white", "black", "silver", "red", "blue"]
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(model, callback_data=f"model:{model}")]
                 for model in CAR_MODELS]
-    await update.message.reply_text("Choose a car model:",
-                                    reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text(
+        "Choose a car model:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 
 # 1 — Select model → go to option
@@ -64,7 +65,7 @@ async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# 3 — Select color → BEFORE asking name, show CONFIRMATION SCREEN
+# 3 — Select color → show confirmation
 async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -91,7 +92,7 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
 
 
-# Handle confirmation choice
+# 4 — User clicks confirm yes/no
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -113,21 +114,21 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         return ConversationHandler.END
 
 
-# 4 — Ask for name
+# 5 — Ask last name
 async def ask_lastname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["first_name"] = update.message.text
     await update.message.reply_text("Endi familiyangizni kiriting:")
     return ASK_LASTNAME
 
 
-# 5 — Ask for phone
+# 6 — Ask phone
 async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["last_name"] = update.message.text
-    await update.message.reply_text("Telefon raqamingizni kiriting (masalan: +998 90 123 45 67):")
+    await update.message.reply_text("Telefon raqamingizni kiriting (+998 90 123 45 67):")
     return ASK_PHONE
 
 
-# 6 — Final — Save to DB
+# 7 — Final — Save to DB
 async def finish_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
 
@@ -145,7 +146,10 @@ async def finish_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-# /admin
+# -------------------------------------------------------------------
+# ADMIN PANEL
+# -------------------------------------------------------------------
+
 async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.from_user.id not in ADMINS:
         return await update.message.reply_text("❌ Siz admin emassiz.")
@@ -155,17 +159,21 @@ async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("❌ Buyurtmani o‘chirish", callback_data="admin:delete")]
     ]
 
-    await update.message.reply_text("Admin paneli:", reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text(
+        "Admin paneli:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 
-# Admin panel actions
 async def admin_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+
     data = query.data
 
     if data == "admin:orders":
         orders = get_orders()
+
         if not orders:
             return await query.edit_message_text("Buyurtmalar yo‘q.")
 
@@ -173,10 +181,12 @@ async def admin_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"ID {oid} → {first} {last} ({phone}) : {model} / {option} / {color}"
             for oid, uid, first, last, phone, model, option, color in orders
         ])
+
         return await query.edit_message_text(text)
 
     if data == "admin:delete":
         orders = get_orders()
+
         if not orders:
             return await query.edit_message_text("O‘chirish uchun buyurtma yo‘q.")
 
@@ -191,7 +201,6 @@ async def admin_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-# Delete order (admin)
 async def delete_order_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -204,14 +213,17 @@ async def wrong_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Iltimos tugmalardan foydalaning 🙂")
 
 
+# -------------------------------------------------------------------
 # MAIN
+# -------------------------------------------------------------------
+
 def main():
     init_db()
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Conversation steps
+    # Conversation pipeline
     conv_handler = ConversationHandler(
-        entry_points=[CallbackQueryHandler(handle_confirmation, pattern="^confirm:")],
+        entry_points=[CallbackQueryHandler(confirm_order, pattern="^color:")],
         states={
             ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_lastname)],
             ASK_LASTNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_phone)],
@@ -220,6 +232,7 @@ def main():
         fallbacks=[]
     )
 
+    # Register handlers
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("admin", admin))
@@ -227,7 +240,7 @@ def main():
     # Flow handlers
     app.add_handler(CallbackQueryHandler(select_option, pattern="^model:"))
     app.add_handler(CallbackQueryHandler(select_color, pattern="^option:"))
-    app.add_handler(CallbackQueryHandler(confirm_order, pattern="^color:"))
+    app.add_handler(CallbackQueryHandler(handle_confirmation, pattern="^confirm:"))
 
     # Admin handlers
     app.add_handler(CallbackQueryHandler(admin_actions, pattern="^admin:"))
