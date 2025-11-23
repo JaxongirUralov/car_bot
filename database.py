@@ -15,6 +15,7 @@ def init_db():
             model TEXT,
             car_option TEXT,
             color TEXT
+            timestamp TEXT
         )
     """)
     conn.commit()
