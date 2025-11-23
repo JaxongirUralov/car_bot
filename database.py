@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 DB_NAME = "orders.db"
 
@@ -27,7 +27,10 @@ def init_db():
 def add_order(user_id, first_name, last_name, phone, model, option, color):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # --- ALWAYS UTC+5 TASHKENT TIME (guaranteed correct) ---
+    tz = timezone(timedelta(hours=5))
+    timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute(
         "INSERT INTO orders (user_id, first_name, last_name, phone, model, option, color, timestamp) "
@@ -42,7 +45,9 @@ def add_order(user_id, first_name, last_name, phone, model, option, color):
 def get_orders():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, user_id, first_name, last_name, phone, model, option, color, timestamp FROM orders")
+    cursor.execute(
+        "SELECT id, user_id, first_name, last_name, phone, model, option, color, timestamp FROM orders"
+    )
     rows = cursor.fetchall()
     conn.close()
     return rows
