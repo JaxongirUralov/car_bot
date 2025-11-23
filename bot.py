@@ -210,6 +210,9 @@ async def wrong_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # MAIN
 def main():
+    if os.path.exists("orders.db"):
+    os.remove("orders.db")
+
     init_db()
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
