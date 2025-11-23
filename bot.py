@@ -1,4 +1,3 @@
-# NEW conversation states
 from telegram.ext import ConversationHandler
 ASK_NAME, ASK_LASTNAME, ASK_PHONE = range(3)
 
@@ -13,25 +12,26 @@ print("RUNNING BOT.PY FROM THIS DIRECTORY:", os.getcwd())
 
 from database import init_db, add_order, get_orders, delete_order
 
-BOT_TOKEN = "8529614987:AAGcJgGU3n_9so1F-KTAv_9-A888rv72Z40"   # your token
+# ------------------------------------------
+# CONFIG
+# ------------------------------------------
+BOT_TOKEN = "YOUR_TOKEN_HERE"
 ADMINS = [261688257]
 
 CAR_MODELS = ["S", "H", "V"]
 OPTIONS = ["LS", "LT", "Premier"]
 COLORS = ["white", "black", "silver", "red", "blue"]
+# ------------------------------------------
 
 
 # /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(model, callback_data=f"model:{model}")]
                 for model in CAR_MODELS]
-    await update.message.reply_text(
-        "Choose a car model:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+    await update.message.reply_text("Choose a car model:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
-# 1 — Select model → go to option
+# 1) MODEL → OPTION
 async def select_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -48,7 +48,7 @@ async def select_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# 2 — Select option → go to color
+# 2) OPTION → COLOR
 async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -65,7 +65,7 @@ async def select_color(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# 3 — Select color → show confirmation
+# 3) COLOR → CONFIRM SCREEN
 async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -92,11 +92,10 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
 
 
-# 4 — User clicks confirm yes/no
+# Confirmation handler
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     choice = query.data.split(":")[1]
 
     if choice == "yes":
@@ -114,21 +113,21 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         return ConversationHandler.END
 
 
-# 5 — Ask last name
+# 4) NAME
 async def ask_lastname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["first_name"] = update.message.text
     await update.message.reply_text("Endi familiyangizni kiriting:")
     return ASK_LASTNAME
 
 
-# 6 — Ask phone
+# 5) LAST NAME → phone
 async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["last_name"] = update.message.text
-    await update.message.reply_text("Telefon raqamingizni kiriting (+998 90 123 45 67):")
+    await update.message.reply_text("Telefon raqamingizni kiriting:")
     return ASK_PHONE
 
 
-# 7 — Final — Save to DB
+# 6) SAVE ORDER
 async def finish_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
 
@@ -146,127 +145,5 @@ async def finish_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-# -------------------------------------------------------------------
-# ADMIN PANEL
-# -------------------------------------------------------------------
-
-async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.from_user.id not in ADMINS:
-        return await update.message.reply_text("❌ Siz admin emassiz.")
-
-    keyboard = [
-        [InlineKeyboardButton("📋 Buyurtmalar ro'yxati", callback_data="admin:orders")],
-        [InlineKeyboardButton("❌ Buyurtmani o‘chirish", callback_data="admin:delete")]
-    ]
-
-    await update.message.reply_text(
-        "Admin paneli:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-
-
-async def admin_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
-
-    if data == "admin:orders":
-        orders = get_orders()
-
-        if not orders:
-            return await query.edit_message_text("Buyurtmalar yo‘q.")
-
-        text = "\n".join([
-            f"ID {oid} → {first} {last} ({phone}) : {model} / {option} / {color}"
-            for oid, uid, first, last, phone, model, option, color in orders
-        ])
-
-        return await query.edit_message_text(text)
-
-    if data == "admin:delete":
-        orders = get_orders()
-
-        if not orders:
-            return await query.edit_message_text("O‘chirish uchun buyurtma yo‘q.")
-
-        keyboard = [
-            [InlineKeyboardButton(f"Delete ID {oid}", callback_data=f"delete:{oid}")]
-            for oid, *_ in orders
-        ]
-
-        return await query.edit_message_text(
-            "Qaysi buyurtmani o‘chirmoqchisiz?",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-
-
-async def delete_order_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    delete_order(int(query.data.split(":")[1]))
-    await query.edit_message_text("✔ Buyurtma o‘chirildi.")
-
-
-async def wrong_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Iltimos tugmalardan foydalaning 🙂")
-
-
-# -------------------------------------------------------------------
-# MAIN
-# -------------------------------------------------------------------
-
-def main():
-    init_db()
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    conv_handler = ConversationHandler(
-        entry_points=[CallbackQueryHandler(handle_confirmation, pattern="^confirm:")],
-        states={
-            ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_lastname)],
-            ASK_LASTNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_phone)],
-            ASK_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, finish_order)],
-        },
-        fallbacks=[]
-    )
-
-
-
-    # Register handlers
-    app.add_handler(conv_handler)
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("admin", admin))
-
-    # Flow handlers
-
-    # 1 – user selects model → goes to select_option
-    app.add_handler(CallbackQueryHandler(select_option, pattern="^model:"))
-
-    # 2 – user selects option → goes to select_color
-    app.add_handler(CallbackQueryHandler(select_color, pattern="^option:"))
-    
-    # 3 – user selects color → goes to confirm_order
-    app.add_handler(CallbackQueryHandler(confirm_order, pattern="^color:"))
-
-
-    # Admin handlers
-    app.add_handler(CallbackQueryHandler(admin_actions, pattern="^admin:"))
-    app.add_handler(CallbackQueryHandler(delete_order_callback, pattern="^delete:"))
-
-    # Last fallback
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, wrong_message))
-
-    print("Bot running with webhook...")
-    WEBHOOK_URL = "https://carbot-production.up.railway.app"
-
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 8080)),
-        url_path=BOT_TOKEN,
-        webhook_url=f"{WEBHOOK_URL}/{BOT_TOKEN}"
-    )
-
-
-if __name__ == "__main__":
-    main()
+# ADMIN
+async def admin(update: Update, context: ContextT
