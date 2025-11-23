@@ -239,9 +239,16 @@ def main():
     app.add_handler(CommandHandler("admin", admin))
 
     # Flow handlers
+
+    # 1 – user selects model → goes to select_option
     app.add_handler(CallbackQueryHandler(select_option, pattern="^model:"))
+
+    # 2 – user selects option → goes to select_color
     app.add_handler(CallbackQueryHandler(select_color, pattern="^option:"))
-    app.add_handler(CallbackQueryHandler(handle_confirmation, pattern="^confirm:"))
+    
+    # 3 – user selects color → goes to confirm_order
+    app.add_handler(CallbackQueryHandler(confirm_order, pattern="^color:"))
+
 
     # Admin handlers
     app.add_handler(CallbackQueryHandler(admin_actions, pattern="^admin:"))
