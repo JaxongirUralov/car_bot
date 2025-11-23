@@ -1,6 +1,8 @@
 import sqlite3
+from datetime import datetime
 
 DB_NAME = "orders.db"
+
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -13,8 +15,8 @@ def init_db():
             last_name TEXT,
             phone TEXT,
             model TEXT,
-            car_option TEXT,
-            color TEXT
+            option TEXT,
+            color TEXT,
             timestamp TEXT
         )
     """)
@@ -22,13 +24,17 @@ def init_db():
     conn.close()
 
 
-def add_order(user_id, first_name, last_name, phone, model, car_option, color):
+def add_order(user_id, first_name, last_name, phone, model, option, color):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     cursor.execute(
-        "INSERT INTO orders (user_id, first_name, last_name, phone, model, car_option, color) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (user_id, first_name, last_name, phone, model, car_option, color)
+        "INSERT INTO orders (user_id, first_name, last_name, phone, model, option, color, timestamp) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (user_id, first_name, last_name, phone, model, option, color, timestamp)
     )
+
     conn.commit()
     conn.close()
 
@@ -36,7 +42,7 @@ def add_order(user_id, first_name, last_name, phone, model, car_option, color):
 def get_orders():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, user_id, first_name, last_name, phone, model, car_option, color FROM orders")
+    cursor.execute("SELECT id, user_id, first_name, last_name, phone, model, option, color, timestamp FROM orders")
     rows = cursor.fetchall()
     conn.close()
     return rows
