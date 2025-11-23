@@ -17,7 +17,7 @@ from database import init_db, add_order, get_orders, delete_order
 # CONFIG
 # ----------------------
 BOT_TOKEN = "8529614987:AAGcJgGU3n_9so1F-KTAv_9-A888rv72Z40"
-ADMINS = [261688257]
+ADMINS = [261688257, 878056136]
 
 CAR_MODELS = ["S", "H", "V"]
 OPTIONS = ["LS", "LT", "Premier"]
