@@ -1,11 +1,14 @@
+# database.py
 import sqlite3
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 DB_NAME = "orders.db"
+UZ_TZ = ZoneInfo("Asia/Tashkent")
 
-# ----------------------------------------------------
-# SUPPLIER REQUIREMENTS DATABASE (hard-coded from Excel)
-# ----------------------------------------------------
+# --------------------------
+# SUPPLIER DATA (Option A)
+# --------------------------
 SUPPLIER_DATA = [
     # ------- S -------
     ("S", "LS", "Steel_wheel_16", "Tyre_Co", 4),
@@ -69,9 +72,8 @@ SUPPLIER_DATA = [
     ("V", "Premier", "Privacy_glass", "Wind_Co", 5),
 ]
 
-
 # ----------------------------------------------------
-# DB INIT
+# DB initialization
 # ----------------------------------------------------
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -108,13 +110,15 @@ def init_db():
 
 
 # ----------------------------------------------------
-# Add ORDER + supplier orders
+# Add main order and create supplier orders automatically
 # ----------------------------------------------------
 def add_order(user_id, first, last, phone, model, option, color):
+    """Insert order and corresponding supplier orders.
+       Returns new order_id."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(UZ_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute("""
         INSERT INTO orders (user_id, first_name, last_name, phone, model, option, color, created_at)
@@ -123,7 +127,7 @@ def add_order(user_id, first, last, phone, model, option, color):
 
     order_id = cursor.lastrowid
 
-    # Add supplier items
+    # insert supplier orders for matching model+option
     for m, opt, part, supplier, qty in SUPPLIER_DATA:
         if m == model and opt == option:
             cursor.execute("""
@@ -133,31 +137,44 @@ def add_order(user_id, first, last, phone, model, option, color):
 
     conn.commit()
     conn.close()
-
+    return order_id
 
 
 # ----------------------------------------------------
-# Get orders
+# Fetch all orders (for super admin)
 # ----------------------------------------------------
 def get_orders():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, user_id, first_name, last_name, phone, model, option, color, created_at FROM orders")
+    cursor.execute("""
+        SELECT id, user_id, first_name, last_name, phone, model, option, color, created_at
+        FROM orders
+        ORDER BY id DESC
+    """)
     rows = cursor.fetchall()
     conn.close()
     return rows
 
 
 # ----------------------------------------------------
-# Admin filtered supplier orders
+# Get supplier-specific orders (for supplier admins)
+# Return joined data with order context
 # ----------------------------------------------------
 def get_supplier_orders(supplier_name):
+    """
+    Returns rows:
+    supplier_order_id, order_id, supplier, part, qty, supplier_created_at,
+    order_first_name, order_last_name, order_phone, order_model, order_option, order_color, order_created_at
+    """
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, order_id, supplier, part, qty, created_at
-        FROM supplier_orders
-        WHERE supplier = ?
+        SELECT s.id, s.order_id, s.supplier, s.part, s.qty, s.created_at,
+               o.first_name, o.last_name, o.phone, o.model, o.option, o.color, o.created_at
+        FROM supplier_orders s
+        JOIN orders o ON s.order_id = o.id
+        WHERE s.supplier = ?
+        ORDER BY s.id DESC
     """, (supplier_name,))
     rows = cursor.fetchall()
     conn.close()
@@ -165,7 +182,7 @@ def get_supplier_orders(supplier_name):
 
 
 # ----------------------------------------------------
-# Delete order
+# Delete order (and its supplier orders)
 # ----------------------------------------------------
 def delete_order(order_id):
     conn = sqlite3.connect(DB_NAME)
