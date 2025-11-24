@@ -1,6 +1,6 @@
 from telegram.ext import ConversationHandler
 ASK_NAME, ASK_LASTNAME, ASK_PHONE = range(3)
-
+from database import load_supplier_table
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler,
@@ -213,6 +213,7 @@ def main():
 
 
     init_db()
+    load_supplier_table()
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Conversation
