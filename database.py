@@ -1,12 +1,82 @@
 import sqlite3
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 
 DB_NAME = "orders.db"
 
+# ----------------------------------------------------
+# SUPPLIER REQUIREMENTS DATABASE (hard-coded from Excel)
+# ----------------------------------------------------
+SUPPLIER_DATA = [
+    # ------- S -------
+    ("S", "LS", "Steel_wheel_16", "Tyre_Co", 4),
+    ("S", "LS", "Halogen", "Lamp_Co", 2),
+    ("S", "LS", "Windscreen", "Wind_Co", 1),
+    ("S", "LS", "Tinted_glass", "Wind_Co", 5),
 
+    ("S", "LT", "Alloy_wheel_16", "Tyre_Co", 4),
+    ("S", "LT", "Roof_rack", "Roof_Co", 2),
+    ("S", "LT", "Projection_type", "Lamp_Co", 2),
+    ("S", "LT", "Halogen_Fog", "Lamp_Co", 2),
+    ("S", "LT", "Windscreen", "Wind_Co", 1),
+    ("S", "LT", "Privacy_glass", "Wind_Co", 5),
+
+    ("S", "Premier", "Alloy_wheel_17", "Tyre_Co", 4),
+    ("S", "Premier", "Roof_rack_red", "Roof_Co", 2),
+    ("S", "Premier", "Sunroof", "Sunroof_Co", 1),
+    ("S", "Premier", "LED", "Lamp_Co", 2),
+    ("S", "Premier", "LED_Fog", "Lamp_Co", 2),
+    ("S", "Premier", "Windscreen", "Wind_Co", 1),
+    ("S", "Premier", "Privacy_glass", "Wind_Co", 5),
+
+    # ------- H -------
+    ("H", "LS", "Steel_wheel_16", "Tyre_Co", 4),
+    ("H", "LT", "Alloy_wheel_16", "Tyre_Co", 4),
+    ("H", "Premier", "Alloy_wheel_17", "Tyre_Co", 4),
+    ("H", "LT", "Roof_rack", "Roof_Co", 2),
+    ("H", "Premier", "Roof_rack_red", "Roof_Co", 2),
+    ("H", "Premier", "Sunroof", "Sunroof_Co", 1),
+    ("H", "LS", "Halogen", "Lamp_Co", 2),
+    ("H", "LT", "Projection_type", "Lamp_Co", 2),
+    ("H", "Premier", "LED", "Lamp_Co", 2),
+    ("H", "LT", "Halogen_Fog", "Lamp_Co", 2),
+    ("H", "Premier", "LED_Fog", "Lamp_Co", 2),
+    ("H", "LS", "Windscreen", "Wind_Co", 1),
+    ("H", "LT", "Windscreen", "Wind_Co", 1),
+    ("H", "Premier", "Windscreen", "Wind_Co", 1),
+    ("H", "LS", "Tinted_glass", "Wind_Co", 5),
+    ("H", "LT", "Privacy_glass", "Wind_Co", 5),
+    ("H", "Premier", "Privacy_glass", "Wind_Co", 5),
+
+    # ------- V -------
+    ("V", "LS", "Steel_wheel_16", "Tyre_Co", 4),
+    ("V", "LS", "Halogen", "Lamp_Co", 2),
+    ("V", "LS", "Windscreen", "Wind_Co", 1),
+    ("V", "LS", "Tinted_glass", "Wind_Co", 5),
+
+    ("V", "LT", "Alloy_wheel_16", "Tyre_Co", 4),
+    ("V", "LT", "Roof_rack", "Roof_Co", 2),
+    ("V", "LT", "Projection_type", "Lamp_Co", 2),
+    ("V", "LT", "Halogen_Fog", "Lamp_Co", 2),
+    ("V", "LT", "Windscreen", "Wind_Co", 1),
+    ("V", "LT", "Privacy_glass", "Wind_Co", 5),
+
+    ("V", "Premier", "Alloy_wheel_17", "Tyre_Co", 4),
+    ("V", "Premier", "Roof_rack_red", "Roof_Co", 2),
+    ("V", "Premier", "Sunroof", "Sunroof_Co", 1),
+    ("V", "Premier", "LED", "Lamp_Co", 2),
+    ("V", "Premier", "LED_Fog", "Lamp_Co", 2),
+    ("V", "Premier", "Windscreen", "Wind_Co", 1),
+    ("V", "Premier", "Privacy_glass", "Wind_Co", 5),
+]
+
+
+# ----------------------------------------------------
+# DB INIT
+# ----------------------------------------------------
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,93 +87,92 @@ def init_db():
             model TEXT,
             option TEXT,
             color TEXT,
-            timestamp TEXT
+            created_at TEXT
         )
     """)
-    conn.commit()
-    conn.close()
 
-
-
-import pandas as pd
-
-DB_NAME = "orders.db"
-
-def load_supplier_table():
-    """Exceldagi supplier ma’lumotlarni SQLite bazaga yuklaydi."""
-
-    # 1) Excelni o'qish
-    df = pd.read_excel("/mnt/data/Database for.xlsx", sheet_name="Supplier")
-
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    # 2) Jadval yaratish
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS supplier_parts (
+        CREATE TABLE IF NOT EXISTS supplier_orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            model TEXT,
-            option TEXT,
-            part TEXT,
+            order_id INTEGER,
             supplier TEXT,
-            qty INTEGER
+            part TEXT,
+            qty INTEGER,
+            created_at TEXT,
+            FOREIGN KEY(order_id) REFERENCES orders(id)
         )
     """)
 
-    # 3) Jadvalni tozalash (har safar boshidan yuklash uchun)
-    cursor.execute("DELETE FROM supplier_parts")
-
-    # 4) Ma’lumotlarni bazaga qo‘shish
-    for _, row in df.iterrows():
-        cursor.execute(
-            "INSERT INTO supplier_parts (model, option, part, supplier, qty) VALUES (?, ?, ?, ?, ?)",
-            (row["Model"], row["Option"], row["Part"], row["Supplier_name"], row["Q-ty"])
-        )
-
     conn.commit()
     conn.close()
 
-    print("Supplier table loaded successfully!")
 
-
-
-
-
-
-
-
-def add_order(user_id, first_name, last_name, phone, model, option, color):
+# ----------------------------------------------------
+# Add ORDER + supplier orders
+# ----------------------------------------------------
+def add_order(user_id, first, last, phone, model, option, color):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # --- ALWAYS UTC+5 TASHKENT TIME (guaranteed correct) ---
-    tz = timezone(timedelta(hours=5))
-    timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.utcnow().isoformat()
 
-    cursor.execute(
-        "INSERT INTO orders (user_id, first_name, last_name, phone, model, option, color, timestamp) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (user_id, first_name, last_name, phone, model, option, color, timestamp)
-    )
+    cursor.execute("""
+        INSERT INTO orders (user_id, first_name, last_name, phone, model, option, color, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, first, last, phone, model, option, color, now))
+
+    order_id = cursor.lastrowid
+
+    # Add supplier items
+    for m, opt, part, supplier, qty in SUPPLIER_DATA:
+        if m == model and opt == option:
+            cursor.execute("""
+                INSERT INTO supplier_orders (order_id, supplier, part, qty, created_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (order_id, supplier, part, qty, now))
 
     conn.commit()
     conn.close()
 
 
+
+# ----------------------------------------------------
+# Get orders
+# ----------------------------------------------------
 def get_orders():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT id, user_id, first_name, last_name, phone, model, option, color, timestamp FROM orders"
-    )
+    cursor.execute("SELECT id, user_id, first_name, last_name, phone, model, option, color, created_at FROM orders")
     rows = cursor.fetchall()
     conn.close()
     return rows
 
 
+# ----------------------------------------------------
+# Admin filtered supplier orders
+# ----------------------------------------------------
+def get_supplier_orders(supplier_name):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, order_id, supplier, part, qty, created_at
+        FROM supplier_orders
+        WHERE supplier = ?
+    """, (supplier_name,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
+# ----------------------------------------------------
+# Delete order
+# ----------------------------------------------------
 def delete_order(order_id):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM supplier_orders WHERE order_id = ?", (order_id,))
     cursor.execute("DELETE FROM orders WHERE id = ?", (order_id,))
+
     conn.commit()
     conn.close()
