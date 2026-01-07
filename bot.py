@@ -15,7 +15,7 @@ SUPER_ADMINS = [261688257]  # fill with your super-admin Telegram IDs
 
 # supplier_name -> [telegram_id, ...]
 SUPPLIER_ADMINS = {
-    "Tyre_Co": [878056136],    # add real Telegram IDs here
+    "Tyre_Co": [261688257],    # add real Telegram IDs here
     "Lamp_Co": [],
     "Wind_Co": [],
     "Roof_Co": [],
