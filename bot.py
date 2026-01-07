@@ -15,7 +15,7 @@ SUPER_ADMINS = [261688257]  # fill with your super-admin Telegram IDs
 
 # supplier_name -> [telegram_id, ...]
 SUPPLIER_ADMINS = {
-    "Tyre_Co": [261688257],    # add real Telegram IDs here
+    "Tyre_Co": [],    # add real Telegram IDs here
     "Lamp_Co": [],
     "Wind_Co": [],
     "Roof_Co": [],
@@ -119,12 +119,8 @@ async def finish_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Buyurtma ma'lumotlari yetarli emas. Iltimos /start bilan qayta boshlang.")
         return ConversationHandler.END
 
-    order_id = add_order(user_id, first, last, phone, model, option, color)
-
-    await notify_suppliers(context, order_id)
-
+    add_order(user_id, first, last, phone, model, option, color)
     await update.message.reply_text("✔ Buyurtma saqlandi! Rahmat.")
-
     return ConversationHandler.END
 
 
@@ -166,33 +162,6 @@ async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return await update.message.reply_text(text)
 
     return await update.message.reply_text("❌ You are not admin.")
-
-
-async def notify_suppliers(context, order_id):
-    from database import get_supplier_orders_by_order
-
-    rows = get_supplier_orders_by_order(order_id)
-
-    for supplier, part, qty, first, last, phone, model, option, color, created in rows:
-        admins = SUPPLIER_ADMINS.get(supplier, [])
-        if not admins:
-            continue
-
-        text = (
-            "🆕 New supplier order!\n\n"
-            f"🆔 Order: {order_id}\n"
-            f"🚗 {model}/{option}/{color}\n"
-            f"📦 Part: {part} ×{qty}\n"
-            f"👤 Customer: {first} {last}\n"
-            f"📞 {phone}\n"
-            f"⏱ {created}"
-        )
-
-        for admin_id in admins:
-            try:
-                await context.bot.send_message(chat_id=admin_id, text=text)
-            except Exception as e:
-                log.error(f"Failed to notify {supplier} admin {admin_id}: {e}")
 
 
 async def admin_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
