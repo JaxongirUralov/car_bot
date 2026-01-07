@@ -180,6 +180,23 @@ def get_supplier_orders(supplier_name):
     conn.close()
     return rows
 
+def get_supplier_orders_by_order(order_id):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT supplier, part, qty,
+               o.first_name, o.last_name, o.phone,
+               o.model, o.option, o.color, o.created_at
+        FROM supplier_orders s
+        JOIN orders o ON s.order_id = o.id
+        WHERE s.order_id = ?
+    """, (order_id,))
+
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
 
 # ----------------------------------------------------
 # Delete order (and its supplier orders)
